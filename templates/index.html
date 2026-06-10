@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deepfake Risk Pipeline</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a1d27;
+      border-bottom: 1px solid #2d3148;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header .logo { font-size: 22px; font-weight: 700; color: #fff; }
+    header .sub  { font-size: 13px; color: #64748b; }
+
+    .page { max-width: 760px; margin: 48px auto; padding: 0 20px; }
+
+    h2 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+    .description { color: #64748b; font-size: 14px; margin-bottom: 28px; }
+
+    .search-card {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      padding: 28px;
+    }
+    .search-row { display: flex; gap: 10px; }
+    input[type="text"] {
+      flex: 1;
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: #e2e8f0;
+      font-size: 15px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    input[type="text"]:focus { border-color: #6366f1; }
+    input[type="text"]::placeholder { color: #475569; }
+
+    button {
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 22px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s, opacity .2s;
+      white-space: nowrap;
+    }
+    button:hover  { background: #4f46e5; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Results ── */
+    #results { margin-top: 28px; display: none; }
+
+    .result-card {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .result-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #2d3148;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .result-name { font-size: 18px; font-weight: 600; }
+    .result-name span { color: #94a3b8; font-weight: 400; font-size: 14px; margin-left: 8px; }
+
+    .badge {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .5px;
+    }
+    .badge-fake       { background: #3f1a1a; color: #f87171; border: 1px solid #7f1d1d; }
+    .badge-suspicious { background: #3f2e0d; color: #fbbf24; border: 1px solid #78350f; }
+    .badge-real       { background: #0d2e1a; color: #4ade80; border: 1px solid #14532d; }
+
+    .result-body { padding: 24px; display: grid; gap: 24px; }
+
+    /* score bar */
+    .score-section label {
+      font-size: 13px;
+      color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .score-section label strong { color: #e2e8f0; font-size: 15px; }
+    .bar-track {
+      background: #0f1117;
+      border-radius: 6px;
+      height: 10px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width .6s ease;
+    }
+    .bar-fake       { background: #ef4444; }
+    .bar-suspicious { background: #f59e0b; }
+    .bar-real       { background: #22c55e; }
+
+    /* criteria grid */
+    .criteria-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+    }
+    .criterion {
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .criterion .dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .dot-ok  { background: #22c55e; }
+    .dot-bad { background: #ef4444; }
+    .dot-neutral { background: #64748b; }
+
+    /* reasons list */
+    .reasons-list { list-style: none; display: grid; gap: 8px; }
+    .reasons-list li {
+      background: #3f1a1a;
+      border: 1px solid #7f1d1d;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 14px;
+      color: #fca5a5;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .reasons-list li::before { content: "⚠"; font-size: 14px; }
+
+    .no-reasons {
+      color: #4ade80;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .no-reasons::before { content: "✓"; font-weight: 700; }
+
+    .disclaimer {
+      margin-top: 16px;
+      font-size: 12px;
+      color: #475569;
+      text-align: center;
+    }
+
+    /* loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid #ffffff44;
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">🛡 Deepfake Risk Pipeline</div>
+    <div class="sub">Defensive OSINT · Facebook Fake Profile Detector</div>
+  </div>
+</header>
+
+<div class="page">
+  <h2>Facebook Profile Check</h2>
+  <p class="description">
+    Enter an employee name to retrieve their Facebook profile indicators and receive
+    a risk classification. Results are signals, not verdicts — always verify manually.
+  </p>
+
+  <div class="search-card">
+    <div class="search-row">
+      <input
+        type="text"
+        id="nameInput"
+        placeholder="e.g. Sara Bebar"
+        autocomplete="off"
+      />
+      <button id="analyseBtn" onclick="analyse()">Analyse</button>
+    </div>
+  </div>
+
+  <div id="results">
+    <div class="result-card">
+
+      <div class="result-header">
+        <div class="result-name">
+          <span id="resName"></span>
+          <span id="resNote"></span>
+        </div>
+        <div id="resBadge" class="badge"></div>
+      </div>
+
+      <div class="result-body">
+
+        <!-- Score bar -->
+        <div class="score-section">
+          <label>
+            Risk Score
+            <strong id="resScore"></strong>
+          </label>
+          <div class="bar-track">
+            <div id="resBar" class="bar-fill" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- Profile criteria -->
+        <div>
+          <div style="font-size:13px;color:#94a3b8;margin-bottom:10px;">Profile indicators</div>
+          <div class="criteria-grid" id="resCriteria"></div>
+        </div>
+
+        <!-- Reasons -->
+        <div>
+          <div style="font-size:13px;color:#94a3b8;margin-bottom:10px;">Detection reasons</div>
+          <div id="resReasons"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <p class="disclaimer">
+      ⚠ This tool uses mock profile data. Results are for demonstration purposes only.
+      Do not use to accuse individuals without independent confirmation.
+    </p>
+  </div>
+</div>
+
+<script>
+  const CRITERIA_LABELS = {
+    has_profile_picture:   "Has profile picture",
+    friends_count:         "Friends count",
+    posts_count:           "Posts count",
+    has_basic_info:        "Has basic info",
+    suspicious_name:       "Suspicious name",
+    low_interactions:      "Low interactions",
+    no_mutual_connections: "No mutual connections",
+    employee_info_match:   "Employee info match",
+    posts_per_hour:        "Posts per hour",
+  };
+
+  function criterionDot(key, value) {
+    // Flags where TRUE is bad
+    const badWhenTrue  = new Set(["suspicious_name","low_interactions","no_mutual_connections"]);
+    // Flags where FALSE is bad
+    const badWhenFalse = new Set(["has_profile_picture","has_basic_info","employee_info_match"]);
+    // Numeric thresholds
+    if (key === "friends_count")  return value < 10  ? "dot-bad" : "dot-ok";
+    if (key === "posts_count")    return value < 5   ? "dot-bad" : "dot-ok";
+    if (key === "posts_per_hour") return value >= 10 ? "dot-bad" : "dot-ok";
+    if (badWhenTrue.has(key))  return value ? "dot-bad" : "dot-ok";
+    if (badWhenFalse.has(key)) return value ? "dot-ok"  : "dot-bad";
+    return "dot-neutral";
+  }
+
+  function formatValue(key, value) {
+    if (typeof value === "boolean") return value ? "Yes" : "No";
+    if (key === "posts_per_hour")   return value.toFixed(1) + " / hr";
+    return value;
+  }
+
+  async function analyse() {
+    const name = document.getElementById("nameInput").value.trim();
+    if (!name) return;
+
+    const btn = document.getElementById("analyseBtn");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Analysing…';
+
+    try {
+      const resp = await fetch("/api/detect-fake-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employee_name: name }),
+      });
+      if (!resp.ok) throw new Error(await resp.text());
+      const data = await resp.json();
+      renderResults(data);
+    } catch (err) {
+      alert("Error: " + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Analyse";
+    }
+  }
+
+  function renderResults(data) {
+    const cls = data.classification;
+    const score = data.risk_score;
+    const maxScore = data.max_score || 155;
+
+    // Badge
+    const badgeEl = document.getElementById("resBadge");
+    const barEl   = document.getElementById("resBar");
+    const { badgeClass, barClass, label } = {
+      LIKELY_FAKE:  { badgeClass: "badge-fake",       barClass: "bar-fake",       label: "Likely Fake" },
+      SUSPICIOUS:   { badgeClass: "badge-suspicious",  barClass: "bar-suspicious", label: "Suspicious"  },
+      LIKELY_REAL:  { badgeClass: "badge-real",        barClass: "bar-real",       label: "Likely Real" },
+    }[cls] || { badgeClass: "", barClass: "bar-real", label: cls };
+
+    document.getElementById("resName").textContent = data.employee_name;
+    document.getElementById("resNote").textContent = "";
+    badgeEl.className = "badge " + badgeClass;
+    badgeEl.textContent = label;
+
+    document.getElementById("resScore").textContent = `${score} / ${maxScore}`;
+    barEl.className = "bar-fill " + barClass;
+    barEl.style.width = Math.min(100, Math.round((score / maxScore) * 100)) + "%";
+
+    // Criteria grid
+    const grid = document.getElementById("resCriteria");
+    grid.innerHTML = "";
+    for (const [key, value] of Object.entries(data.criteria)) {
+      const dot = criterionDot(key, value);
+      grid.innerHTML += `
+        <div class="criterion">
+          <span class="dot ${dot}"></span>
+          <span><strong>${CRITERIA_LABELS[key] || key}:</strong> ${formatValue(key, value)}</span>
+        </div>`;
+    }
+
+    // Reasons
+    const reasonsEl = document.getElementById("resReasons");
+    if (data.reasons.length === 0) {
+      reasonsEl.innerHTML = '<div class="no-reasons">No risk signals detected</div>';
+    } else {
+      reasonsEl.innerHTML =
+        '<ul class="reasons-list">' +
+        data.reasons.map(r => `<li>${r}</li>`).join("") +
+        "</ul>";
+    }
+
+    document.getElementById("results").style.display = "block";
+    document.getElementById("results").scrollIntoView({ behavior: "smooth" });
+  }
+
+  // Allow Enter key to submit
+  document.getElementById("nameInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") analyse();
+  });
+</script>
+</body>
+</html>
