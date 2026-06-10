@@ -14,6 +14,11 @@ def home():
     return render_template("index.html")
 
 
+@app.route("/analyze")
+def analyze():
+    return render_template("analyze.html")
+
+
 @app.route("/api/detect-fake-profile", methods=["POST"])
 def detect_fake_profile():
     body = request.get_json(silent=True) or {}
