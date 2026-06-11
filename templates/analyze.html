@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Harel Deepfake Protection</title>
+  <title>Media Analyser — Harel Deepfake Protection</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -14,142 +14,171 @@
       min-height: 100vh;
     }
 
+    /* ── Nav ── */
     header {
       background: #1a1d27;
       border-bottom: 1px solid #2d3148;
-      padding: 16px 32px;
+      padding: 0 32px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      height: 56px;
     }
-    .logo      { font-size: 20px; font-weight: 700; color: #fff; }
+    .logo { font-size: 17px; font-weight: 700; color: #fff; white-space: nowrap; }
     .logo span { color: #6366f1; }
-    .nav-links a {
-      color: #64748b; text-decoration: none; font-size: 14px; margin-left: 24px;
-      transition: color .2s;
+    nav { display: flex; gap: 4px; }
+    nav a {
+      color: #64748b;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: 7px;
+      transition: color .2s, background .2s;
     }
-    .nav-links a:hover { color: #e2e8f0; }
+    nav a:hover  { color: #e2e8f0; background: #23263a; }
+    nav a.active { color: #fff; background: #23263a; }
 
-    .page { max-width: 900px; margin: 40px auto; padding: 0 20px 60px; }
+    /* ── Page ── */
+    .page { max-width: 900px; margin: 44px auto; padding: 0 20px 60px; }
 
-    h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
-    .sub { color: #64748b; font-size: 14px; margin-bottom: 28px; }
+    .page-header { margin-bottom: 28px; }
+    .page-header h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .page-header p  { color: #64748b; font-size: 14px; line-height: 1.6; }
 
     /* ── Upload zone ── */
-    .upload-zone {
+    .upload-card {
       background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .upload-zone {
+      background: #0f1117;
       border: 2px dashed #2d3148;
-      border-radius: 14px;
-      padding: 48px 24px;
+      border-radius: 10px;
+      padding: 40px 24px;
       text-align: center;
       cursor: pointer;
-      transition: border-color .2s, background .2s;
       position: relative;
+      transition: border-color .2s, background .2s;
     }
-    .upload-zone.dragging { border-color: #6366f1; background: #1e2035; }
+    .upload-zone.dragging { border-color: #6366f1; background: #13152a; }
     .upload-zone input[type="file"] {
       position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
     }
-    .upload-icon { font-size: 40px; margin-bottom: 12px; }
-    .upload-zone h3 { font-size: 16px; margin-bottom: 6px; }
-    .upload-zone p  { color: #64748b; font-size: 13px; }
-    #fileName { margin-top: 10px; color: #6366f1; font-size: 14px; font-weight: 500; }
+    .upload-icon { font-size: 36px; margin-bottom: 10px; }
+    .upload-zone h3 { font-size: 15px; margin-bottom: 4px; }
+    .upload-zone p  { font-size: 13px; color: #64748b; }
+    #fileName { margin-top: 10px; font-size: 13px; color: #6366f1; font-weight: 500; min-height: 18px; }
 
-    .btn {
+    .btn-primary {
       display: block;
       width: 100%;
-      margin-top: 18px;
+      margin-top: 14px;
       background: #6366f1;
       color: #fff;
       border: none;
-      border-radius: 10px;
-      padding: 14px;
+      border-radius: 8px;
+      padding: 13px;
       font-size: 15px;
       font-weight: 600;
       cursor: pointer;
       transition: background .2s, opacity .2s;
     }
-    .btn:hover    { background: #4f46e5; }
-    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-primary:hover    { background: #4f46e5; }
+    .btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* ── Error banner ── */
+    #errorBanner {
+      display: none;
+      margin-top: 16px;
+      background: #3f1a1a;
+      border: 1px solid #7f1d1d;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 14px;
+      color: #fca5a5;
+    }
 
     /* ── Results grid ── */
-    #results { display: none; margin-top: 36px; }
+    #results { margin-top: 30px; display: none; animation: fadeUp .35s ease; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
 
     .results-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      gap: 14px;
     }
     @media (max-width: 600px) { .results-grid { grid-template-columns: 1fr; } }
 
+    /* ── Cards ── */
     .card {
       background: #1a1d27;
       border: 1px solid #2d3148;
       border-radius: 12px;
       padding: 20px;
+      position: relative;
     }
+    .card-final { grid-column: 1 / -1; border-color: #3d3f6e; }
+
     .card-title {
       font-size: 11px;
       font-weight: 700;
-      letter-spacing: 1px;
+      letter-spacing: .9px;
       text-transform: uppercase;
       color: #64748b;
       margin-bottom: 14px;
       display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 6px;
     }
-    .card-title .icon { font-size: 15px; }
 
-    /* Score row */
-    .score-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 8px;
-    }
-    .score-big { font-size: 28px; font-weight: 700; }
-    .score-label { font-size: 12px; color: #94a3b8; }
+    .score-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+    .score-big  { font-size: 30px; font-weight: 700; }
+    .score-unit { font-size: 13px; color: #94a3b8; }
 
-    .bar-track { background: #0f1117; border-radius: 6px; height: 7px; overflow: hidden; margin-bottom: 12px; }
+    .bar-track { background: #0f1117; border-radius: 6px; height: 7px; overflow: hidden; margin-bottom: 14px; }
     .bar-fill  { height: 100%; border-radius: 6px; transition: width .7s ease; }
     .bar-high   { background: #ef4444; }
     .bar-medium { background: #f59e0b; }
     .bar-low    { background: #22c55e; }
 
-    .kv { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+    .kv { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
     .kv .k { color: #94a3b8; }
     .kv .v { font-weight: 500; }
 
-    /* Badge */
     .badge {
       display: inline-block;
-      padding: 3px 10px;
+      padding: 3px 11px;
       border-radius: 20px;
       font-size: 12px;
       font-weight: 700;
     }
-    .badge-high   { background: #3f1a1a; color: #f87171; border: 1px solid #7f1d1d; }
-    .badge-medium { background: #3f2e0d; color: #fbbf24; border: 1px solid #78350f; }
-    .badge-low    { background: #0d2e1a; color: #4ade80; border: 1px solid #14532d; }
-    .badge-na     { background: #1e2130; color: #94a3b8; border: 1px solid #2d3148; }
+    .badge-high   { background: #3f1a1a; color: #f87171;  border: 1px solid #7f1d1d; }
+    .badge-medium { background: #3f2e0d; color: #fbbf24;  border: 1px solid #78350f; }
+    .badge-low    { background: #0d2e1a; color: #4ade80;  border: 1px solid #14532d; }
+    .badge-na     { background: #1e2130; color: #94a3b8;  border: 1px solid #2d3148; }
 
-    /* Final risk card — full width */
-    .card-final {
-      grid-column: 1 / -1;
-      border-color: #3d3f6e;
-    }
-    .final-score-row {
+    .card-note { margin-top: 8px; font-size: 12px; color: #64748b; line-height: 1.5; }
+
+    /* Final risk card */
+    .final-hero {
       display: flex;
       align-items: center;
       gap: 20px;
       margin-bottom: 16px;
       flex-wrap: wrap;
     }
-    .final-score-num { font-size: 52px; font-weight: 800; line-height: 1; }
-    .final-summary   { color: #94a3b8; font-size: 14px; }
-
-    .reasons-list { list-style: none; display: grid; gap: 7px; margin-top: 12px; }
+    .final-score-num { font-size: 56px; font-weight: 800; line-height: 1; }
+    .final-meta      { flex: 1; }
+    .final-summary   { color: #94a3b8; font-size: 14px; margin-top: 6px; line-height: 1.5; }
+    .divider         { border: none; border-top: 1px solid #2d3148; margin: 16px 0; }
+    .section-label   { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: .7px; margin-bottom: 10px; }
+    .reasons-list    { list-style: none; display: grid; gap: 7px; }
     .reasons-list li {
       background: #0f1117;
       border: 1px solid #2d3148;
@@ -162,123 +191,147 @@
     }
     .reasons-list li::before { content: "›"; color: #6366f1; font-weight: 700; }
 
-    .divider { border: none; border-top: 1px solid #2d3148; margin: 16px 0; }
+    /* ── Skeleton loading ── */
+    .skeleton-overlay {
+      position: absolute;
+      inset: 0;
+      background: #1a1d27cc;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      backdrop-filter: blur(2px);
+    }
+    .skeleton-overlay .mini-spinner {
+      width: 24px; height: 24px;
+      border: 3px solid #2d3148;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* spinner */
+    .disclaimer { text-align: center; font-size: 12px; color: #475569; margin-top: 22px; }
+
+    /* main spinner in button */
     .spinner {
       display: inline-block; width: 15px; height: 15px;
       border: 2px solid #ffffff44; border-top-color: #fff;
       border-radius: 50%; animation: spin .6s linear infinite;
       vertical-align: middle; margin-right: 6px;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .disclaimer { text-align: center; font-size: 12px; color: #475569; margin-top: 28px; }
   </style>
 </head>
 <body>
 
 <header>
   <div class="logo">🛡 Harel <span>Deepfake Protection</span></div>
-  <nav class="nav-links">
+  <nav>
     <a href="/">Facebook Detector</a>
-    <a href="/analyze">Media Analyser</a>
+    <a href="/analyze" class="active">Media Analyser</a>
   </nav>
 </header>
 
 <div class="page">
-  <h2>Media Analyser</h2>
-  <p class="sub">Upload an image or video to run all detection modules and receive a combined risk score.</p>
-
-  <div class="upload-zone" id="dropZone">
-    <input type="file" id="fileInput" accept="image/*,video/*" onchange="onFileSelected()" />
-    <div class="upload-icon">📁</div>
-    <h3>Drop a file here or click to browse</h3>
-    <p>Supports JPEG, PNG, MP4, MOV and other common formats</p>
-    <div id="fileName"></div>
+  <div class="page-header">
+    <h2>Media Analyser</h2>
+    <p>Upload an image or video to run face matching, deepfake detection, watermark/provenance,
+       and audio analysis — returning one combined risk score.</p>
   </div>
 
-  <button class="btn" id="analyseBtn" onclick="analyse()" disabled>Select a file to analyse</button>
+  <div class="upload-card">
+    <div class="upload-zone" id="dropZone">
+      <input type="file" id="fileInput" accept="image/*,video/*" onchange="onFileSelected()" />
+      <div class="upload-icon">📁</div>
+      <h3>Drop a file here or click to browse</h3>
+      <p>JPEG · PNG · MP4 · MOV and other common formats</p>
+      <div id="fileName"></div>
+    </div>
+    <button class="btn-primary" id="analyseBtn" onclick="analyse()" disabled>
+      Select a file to analyse
+    </button>
+  </div>
 
+  <div id="errorBanner"></div>
+
+  <!-- Results -->
   <div id="results">
     <div class="results-grid">
 
       <!-- Face Match -->
-      <div class="card">
-        <div class="card-title"><span class="icon">👤</span> Employee Identity</div>
+      <div class="card" id="cardFace">
+        <div class="card-title"><span>👤</span> Employee Identity</div>
         <div class="score-row">
           <span class="score-big" id="faceScore">—</span>
-          <span class="score-label">match %</span>
+          <span class="score-unit">match %</span>
         </div>
         <div class="bar-track"><div class="bar-fill" id="faceBar" style="width:0%"></div></div>
         <div class="kv"><span class="k">Employee</span><span class="v" id="faceName">—</span></div>
         <div class="kv"><span class="k">Verified</span><span class="v" id="faceVerified">—</span></div>
-        <div id="faceNote" style="margin-top:8px;font-size:12px;color:#64748b;"></div>
+        <div class="card-note" id="faceNote"></div>
       </div>
 
       <!-- Deepfake Detection -->
-      <div class="card">
-        <div class="card-title"><span class="icon">🔍</span> Deepfake Detection</div>
+      <div class="card" id="cardDf">
+        <div class="card-title"><span>🔍</span> Deepfake Detection</div>
         <div class="score-row">
           <span class="score-big" id="dfScore">—</span>
-          <span class="score-label">/ 100</span>
+          <span class="score-unit">/ 100</span>
         </div>
         <div class="bar-track"><div class="bar-fill" id="dfBar" style="width:0%"></div></div>
         <div class="kv"><span class="k">Label</span><span id="dfLabel">—</span></div>
-        <div id="dfExplanation" style="margin-top:10px;font-size:12px;color:#64748b;line-height:1.5;"></div>
+        <div class="card-note" id="dfExplanation"></div>
       </div>
 
       <!-- Watermark -->
-      <div class="card">
-        <div class="card-title"><span class="icon">🔏</span> Watermark &amp; Provenance</div>
+      <div class="card" id="cardWm">
+        <div class="card-title"><span>🔏</span> Watermark &amp; Provenance</div>
         <div class="score-row">
           <span class="score-big" id="wmScore">—</span>
-          <span class="score-label">/ 100</span>
+          <span class="score-unit">/ 100</span>
         </div>
         <div class="bar-track"><div class="bar-fill" id="wmBar" style="width:0%"></div></div>
         <div class="kv"><span class="k">Metadata</span><span class="v" id="wmMeta">—</span></div>
-        <div class="kv"><span class="k">C2PA</span><span class="v" id="wmC2pa">—</span></div>
-        <div class="kv"><span class="k">SynthID</span><span class="v" id="wmSynthid">—</span></div>
+        <div class="kv"><span class="k">C2PA</span>    <span class="v" id="wmC2pa">—</span></div>
+        <div class="kv"><span class="k">SynthID</span> <span class="v" id="wmSynthid">—</span></div>
       </div>
 
       <!-- Audio -->
-      <div class="card">
-        <div class="card-title"><span class="icon">🎧</span> Audio Analysis</div>
+      <div class="card" id="cardAudio">
+        <div class="card-title"><span>🎧</span> Audio Analysis</div>
         <div class="score-row">
           <span class="score-big" id="audioScore">—</span>
-          <span class="score-label">/ 100</span>
+          <span class="score-unit">/ 100</span>
         </div>
         <div class="bar-track"><div class="bar-fill" id="audioBar" style="width:0%"></div></div>
         <div class="kv"><span class="k">Checked</span><span class="v" id="audioChecked">—</span></div>
-        <div class="kv"><span class="k">Label</span><span id="audioLabel">—</span></div>
-        <div id="audioExplanation" style="margin-top:10px;font-size:12px;color:#64748b;line-height:1.5;"></div>
+        <div class="kv"><span class="k">Label</span>  <span id="audioLabel">—</span></div>
+        <div class="card-note" id="audioExplanation"></div>
       </div>
 
-      <!-- Final Risk — full width -->
-      <div class="card card-final">
-        <div class="card-title"><span class="icon">⚡</span> Final Risk Score</div>
-        <div class="final-score-row">
-          <div>
-            <div class="final-score-num" id="finalScore">—</div>
-            <div style="color:#94a3b8;font-size:13px;margin-top:4px;">out of 100</div>
-          </div>
-          <div>
-            <div id="finalBadge" class="badge" style="font-size:16px;padding:6px 18px;"></div>
-            <div class="final-summary" id="finalSummary" style="margin-top:8px;max-width:500px;"></div>
+      <!-- Final Risk -->
+      <div class="card card-final" id="cardFinal">
+        <div class="card-title"><span>⚡</span> Final Risk Score</div>
+        <div class="final-hero">
+          <div class="final-score-num" id="finalScore">—</div>
+          <div class="final-meta">
+            <div id="finalBadge" class="badge" style="font-size:15px;padding:5px 16px;"></div>
+            <div class="final-summary" id="finalSummary"></div>
           </div>
         </div>
         <hr class="divider" />
-        <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;">Contributing scores</div>
-        <div class="kv"><span class="k">Deepfake (30%)</span><span class="v" id="cmpDf">—</span></div>
-        <div class="kv"><span class="k">Face mismatch (25%)</span><span class="v" id="cmpFace">—</span></div>
-        <div class="kv"><span class="k">Watermark (25%)</span><span class="v" id="cmpWm">—</span></div>
-        <div class="kv"><span class="k">Audio (20%)</span><span class="v" id="cmpAudio">—</span></div>
+        <div class="section-label">Contributing scores (weighted)</div>
+        <div class="kv"><span class="k">Deepfake detection (30%)</span> <span class="v" id="cmpDf">—</span></div>
+        <div class="kv"><span class="k">Face mismatch (25%)</span>      <span class="v" id="cmpFace">—</span></div>
+        <div class="kv"><span class="k">Watermark &amp; provenance (25%)</span><span class="v" id="cmpWm">—</span></div>
+        <div class="kv"><span class="k">Audio analysis (20%)</span>     <span class="v" id="cmpAudio">—</span></div>
         <hr class="divider" />
+        <div class="section-label">Explanation</div>
         <ul class="reasons-list" id="finalReasons"></ul>
       </div>
 
     </div>
-
     <p class="disclaimer">
       ⚠ Results are risk signals, not verdicts. Always verify findings manually.
       Do not use to accuse individuals without independent confirmation.
@@ -287,58 +340,102 @@
 </div>
 
 <script>
-  const API = "http://localhost:8000";
+  // ── Config ─────────────────────────────────────────────────────────────────
+  // The FastAPI backend runs on port 8000. Change this if you deploy elsewhere.
+  const API_BASE = "http://localhost:8000";
 
+  // ── File selection ──────────────────────────────────────────────────────────
   let selectedFile = null;
 
   function onFileSelected() {
-    const input = document.getElementById("fileInput");
-    selectedFile = input.files[0] || null;
+    selectedFile = document.getElementById("fileInput").files[0] || null;
     document.getElementById("fileName").textContent = selectedFile ? selectedFile.name : "";
     const btn = document.getElementById("analyseBtn");
     btn.disabled = !selectedFile;
-    btn.textContent = selectedFile ? `Analyse "${selectedFile.name}"` : "Select a file to analyse";
+    btn.textContent = selectedFile ? `Analyse  "${selectedFile.name}"` : "Select a file to analyse";
   }
 
-  // Drag & drop
   const dz = document.getElementById("dropZone");
   dz.addEventListener("dragover",  e => { e.preventDefault(); dz.classList.add("dragging"); });
-  dz.addEventListener("dragleave", () => dz.classList.remove("dragging"));
+  dz.addEventListener("dragleave", ()  => dz.classList.remove("dragging"));
   dz.addEventListener("drop", e => {
     e.preventDefault();
     dz.classList.remove("dragging");
     const f = e.dataTransfer.files[0];
-    if (f) {
-      selectedFile = f;
-      document.getElementById("fileName").textContent = f.name;
-      const btn = document.getElementById("analyseBtn");
-      btn.disabled = false;
-      btn.textContent = `Analyse "${f.name}"`;
-    }
+    if (!f) return;
+    selectedFile = f;
+    document.getElementById("fileName").textContent = f.name;
+    const btn = document.getElementById("analyseBtn");
+    btn.disabled = false;
+    btn.textContent = `Analyse  "${f.name}"`;
   });
 
+  // ── Error banner ────────────────────────────────────────────────────────────
+  function showError(msg) {
+    const el = document.getElementById("errorBanner");
+    el.textContent = "⚠ " + msg;
+    el.style.display = "block";
+  }
+  function clearError() {
+    const el = document.getElementById("errorBanner");
+    el.style.display = "none";
+    el.textContent = "";
+  }
+
+  // ── Loading skeletons ───────────────────────────────────────────────────────
+  const CARD_IDS = ["cardFace", "cardDf", "cardWm", "cardAudio", "cardFinal"];
+
+  function showSkeletons() {
+    for (const id of CARD_IDS) {
+      const card = document.getElementById(id);
+      if (card.querySelector(".skeleton-overlay")) continue;
+      const ov = document.createElement("div");
+      ov.className = "skeleton-overlay";
+      ov.innerHTML = '<div class="mini-spinner"></div>';
+      card.appendChild(ov);
+    }
+  }
+  function hideSkeletons() {
+    for (const id of CARD_IDS) {
+      document.getElementById(id).querySelector(".skeleton-overlay")?.remove();
+    }
+  }
+
+  // ── Main analyse ────────────────────────────────────────────────────────────
   async function analyse() {
     if (!selectedFile) return;
+    clearError();
+
     const btn = document.getElementById("analyseBtn");
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>Analysing…';
-    document.getElementById("results").style.display = "none";
+
+    // Show result cards with loading state immediately
+    document.getElementById("results").style.display = "block";
+    document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    showSkeletons();
 
     try {
       const form = new FormData();
       form.append("file", selectedFile);
-      const resp = await fetch(`${API}/analyze-media`, { method: "POST", body: form });
-      if (!resp.ok) throw new Error(await resp.text());
+      const resp = await fetch(`${API_BASE}/analyze-media`, { method: "POST", body: form });
+      if (!resp.ok) {
+        const body = await resp.text();
+        throw new Error(`Server error ${resp.status}: ${body}`);
+      }
       const data = await resp.json();
       renderResults(data);
     } catch (err) {
-      alert("Error: " + err.message);
+      document.getElementById("results").style.display = "none";
+      showError(err.message);
     } finally {
+      hideSkeletons();
       btn.disabled = false;
-      btn.textContent = `Analyse "${selectedFile.name}"`;
+      btn.textContent = `Analyse  "${selectedFile.name}"`;
     }
   }
 
+  // ── Helpers ─────────────────────────────────────────────────────────────────
   function riskBarClass(level) {
     return { high: "bar-high", medium: "bar-medium", low: "bar-low" }[level] || "bar-low";
   }
@@ -348,70 +445,67 @@
   function badgeLabel(level) {
     return { high: "High Risk", medium: "Medium Risk", low: "Low Risk" }[level] || level;
   }
-
   function setBar(barId, score, level, max = 100) {
     const el = document.getElementById(barId);
     el.className = "bar-fill " + riskBarClass(level);
     el.style.width = Math.min(100, Math.round((score / max) * 100)) + "%";
   }
 
+  // ── Render ──────────────────────────────────────────────────────────────────
   function renderResults(data) {
     // Face match
-    const fm = data.face_match || {};
-    const faceScore = fm.face_match_score || 0;
-    const faceLevel = faceScore >= 70 ? "low" : faceScore >= 40 ? "medium" : "high";
-    document.getElementById("faceScore").textContent = faceScore.toFixed(1);
+    const fm         = data.face_match || {};
+    const faceScore  = fm.face_match_score || 0;
+    const faceLevel  = faceScore >= 70 ? "low" : faceScore >= 40 ? "medium" : "high";
+    document.getElementById("faceScore").textContent   = faceScore.toFixed(1);
     document.getElementById("faceName").textContent    = fm.employee_name || "Unknown";
-    document.getElementById("faceVerified").innerHTML  =
-      fm.matched
-        ? '<span class="badge badge-low">Yes</span>'
-        : '<span class="badge badge-high">No</span>';
+    document.getElementById("faceVerified").innerHTML  = fm.matched
+      ? '<span class="badge badge-low">Yes</span>'
+      : '<span class="badge badge-high">No</span>';
     document.getElementById("faceNote").textContent    = fm.note || "";
     setBar("faceBar", faceScore, faceLevel);
 
     // Deepfake
-    const df = data.deepfake_detection || {};
-    const dfScore = df.deepfake_score || 0;
-    const dfLevel = dfScore >= 70 ? "high" : dfScore >= 40 ? "medium" : "low";
-    document.getElementById("dfScore").textContent = dfScore;
-    document.getElementById("dfLabel").innerHTML   =
+    const df        = data.deepfake_detection || {};
+    const dfScore   = df.deepfake_score || 0;
+    const dfLevel   = dfScore >= 70 ? "high" : dfScore >= 40 ? "medium" : "low";
+    document.getElementById("dfScore").textContent       = dfScore;
+    document.getElementById("dfLabel").innerHTML         =
       `<span class="badge ${badgeClass(dfLevel)}">${df.label || "—"}</span>`;
     document.getElementById("dfExplanation").textContent = df.explanation || "";
     setBar("dfBar", dfScore, dfLevel);
 
     // Watermark
-    const wm = data.watermark_check || {};
-    const wmScore = wm.watermark_score || 0;
-    const wmLevel = wm.risk_level || "low";
-    document.getElementById("wmScore").textContent = wmScore;
-    document.getElementById("wmMeta").textContent =
-      wm.metadata?.metadata_found ? "Found ✓" : "Missing ✗";
-    document.getElementById("wmC2pa").textContent =
-      wm.c2pa?.c2pa_found ? "Found ✓" : "Not found";
-    document.getElementById("wmSynthid").textContent =
-      wm.synthid?.status === "detected" ? "Detected ⚠" : wm.synthid?.status || "—";
+    const wm       = data.watermark_check || {};
+    const wmScore  = wm.watermark_score || 0;
+    const wmLevel  = wm.risk_level || "low";
+    document.getElementById("wmScore").textContent   = wmScore;
+    document.getElementById("wmMeta").textContent    = wm.metadata?.metadata_found ? "Found ✓" : "Missing ✗";
+    document.getElementById("wmC2pa").textContent    = wm.c2pa?.c2pa_found ? "Found ✓" : "Not found";
+    document.getElementById("wmSynthid").textContent = wm.synthid?.status === "detected"
+      ? "⚠ Detected" : (wm.synthid?.status || "—");
     setBar("wmBar", wmScore, wmLevel);
 
     // Audio
-    const au = data.audio_analysis || {};
-    const auScore = au.audio_score || 0;
-    const auLevel = auScore >= 70 ? "high" : auScore >= 40 ? "medium" : "low";
-    document.getElementById("audioScore").textContent = auScore;
-    document.getElementById("audioChecked").textContent = au.audio_checked ? "Yes" : "N/A";
-    document.getElementById("audioLabel").innerHTML    =
+    const au       = data.audio_analysis || {};
+    const auScore  = au.audio_score || 0;
+    const auLevel  = auScore >= 70 ? "high" : auScore >= 40 ? "medium" : "low";
+    document.getElementById("audioScore").textContent       = auScore;
+    document.getElementById("audioChecked").textContent     = au.audio_checked ? "Yes" : "N/A";
+    document.getElementById("audioLabel").innerHTML         =
       `<span class="badge ${au.audio_checked ? badgeClass(auLevel) : "badge-na"}">${au.label || "—"}</span>`;
     document.getElementById("audioExplanation").textContent = au.explanation || "";
     setBar("audioBar", auScore, au.audio_checked ? auLevel : "low");
 
     // Final risk
-    const fr = data.final_risk || {};
+    const fr         = data.final_risk || {};
     const finalScore = fr.final_risk_score || 0;
     const finalLevel = fr.risk_level || "low";
-    const expl = fr.explanation || {};
-    document.getElementById("finalScore").textContent = finalScore;
-    const badge = document.getElementById("finalBadge");
-    badge.className = "badge " + badgeClass(finalLevel);
-    badge.textContent = badgeLabel(finalLevel);
+    const expl       = fr.explanation || {};
+    document.getElementById("finalScore").textContent   = finalScore;
+    const fbadge = document.getElementById("finalBadge");
+    fbadge.className   = "badge " + badgeClass(finalLevel);
+    fbadge.textContent = badgeLabel(finalLevel);
     document.getElementById("finalSummary").textContent = expl.summary || "";
 
     const comp = fr.components || {};
@@ -420,11 +514,8 @@
     document.getElementById("cmpWm").textContent    = comp.watermark_score   ?? "—";
     document.getElementById("cmpAudio").textContent = comp.audio_score       ?? "—";
 
-    const ul = document.getElementById("finalReasons");
-    ul.innerHTML = (expl.reasons || []).map(r => `<li>${r}</li>`).join("");
-
-    document.getElementById("results").style.display = "block";
-    document.getElementById("results").scrollIntoView({ behavior: "smooth" });
+    document.getElementById("finalReasons").innerHTML =
+      (expl.reasons || []).map(r => `<li>${r}</li>`).join("");
   }
 </script>
 </body>
